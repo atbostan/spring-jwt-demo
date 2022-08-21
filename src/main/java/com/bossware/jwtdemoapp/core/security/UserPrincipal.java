@@ -1,4 +1,4 @@
-package com.bossware.jwtdemoapp.core.models.security;
+package com.bossware.jwtdemoapp.core.security;
 
 import com.bossware.jwtdemoapp.core.models.entities.User;
 import org.springframework.security.core.GrantedAuthority;

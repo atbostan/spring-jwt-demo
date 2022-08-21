@@ -1,3 +1,7 @@
+
+jwt :
+  secret : 'jwt-DEMO-app+designedby@atbforimplementingother*frameworkdoingwith[java]'
+
 server :
   port : 8081
 
