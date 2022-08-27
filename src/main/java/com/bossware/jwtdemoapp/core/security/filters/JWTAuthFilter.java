@@ -2,13 +2,13 @@ package com.bossware.jwtdemoapp.core.security.filters;
 
 import com.bossware.jwtdemoapp.core.constants.SecurityConstants;
 import com.bossware.jwtdemoapp.core.utilities.JWTProvider;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -32,7 +32,7 @@ public class JWTAuthFilter extends OncePerRequestFilter {
             response.setStatus(HttpStatus.OK.value());
         }else{
             String autharizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-            if (StringUtils.hasText(autharizationHeader)||!autharizationHeader.startsWith(SecurityConstants.TOKEN_PREFIX)){
+            if (!StringUtils.isAnyBlank(autharizationHeader)||!autharizationHeader.startsWith(SecurityConstants.TOKEN_PREFIX)){
                 filterChain.doFilter(request,response);
             }
 

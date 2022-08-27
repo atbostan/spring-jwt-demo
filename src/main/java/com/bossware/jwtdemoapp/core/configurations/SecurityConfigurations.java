@@ -4,7 +4,7 @@ import com.bossware.jwtdemoapp.core.constants.SecurityConstants;
 import com.bossware.jwtdemoapp.core.security.JWTAccessDeniedHandler;
 import com.bossware.jwtdemoapp.core.security.JWTAuthEntryPoint;
 import com.bossware.jwtdemoapp.core.security.filters.JWTAuthFilter;
-import com.bossware.jwtdemoapp.persistance.services.impl.UserServiceImpl;
+import com.bossware.jwtdemoapp.application.services.impl.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

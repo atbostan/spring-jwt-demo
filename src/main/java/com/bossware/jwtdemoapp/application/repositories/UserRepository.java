@@ -1,4 +1,4 @@
-package com.bossware.jwtdemoapp.persistance.repositories;
+package com.bossware.jwtdemoapp.application.repositories;
 
 import com.bossware.jwtdemoapp.core.models.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;

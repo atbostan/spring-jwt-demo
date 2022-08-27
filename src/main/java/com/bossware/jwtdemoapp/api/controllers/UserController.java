@@ -1,15 +1,29 @@
 package com.bossware.jwtdemoapp.api.controllers;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.bossware.jwtdemoapp.application.services.UserService;
+import com.bossware.jwtdemoapp.core.exception.ExceptionHandlerHelper;
+import com.bossware.jwtdemoapp.core.exception.domain.email.EmailExistException;
+import com.bossware.jwtdemoapp.core.exception.domain.user.UserNameExistException;
+import com.bossware.jwtdemoapp.core.models.entities.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/user")
-public class UserController {
+public class UserController extends ExceptionHandlerHelper {
 
-   @GetMapping("/home")
-    public String showUser(){
-       return "WORKS";
+    @Autowired
+    UserService userService;
+
+   @PostMapping("/register")
+    public ResponseEntity<User> register(@RequestBody User user)  throws UserNameExistException, EmailExistException, UsernameNotFoundException {
+       User registeredUser =
+               userService.register(user.getFirstName(),user.getLastName(),user.getUserName(),user.getPassword());
+       return new ResponseEntity<>(registeredUser, HttpStatus.OK);
     }
+
+
 }
