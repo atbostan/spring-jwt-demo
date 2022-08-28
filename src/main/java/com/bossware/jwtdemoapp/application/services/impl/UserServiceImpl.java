@@ -24,30 +24,46 @@ import org.springframework.util.StringUtils;
 import javax.transaction.Transactional;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Service
 @Transactional
 @Qualifier("userDetailService")
 public class UserServiceImpl implements UserService , UserDetailsService {
+    public static final String USER_NOT_FOUND_BY_SPESIFIED_USER_NAME = "User not found by spesified userName ";
+    public static final String RETURNING_FOUND_USER_BY_USER_NAME = "Returning found user by userName ";
+    public static final String USERNAME_ALREADY_EXIST = "Username Already Exist ";
+    public static final String EMAIL_ALREADY_EXIST = "Email Already Exist ";
+    public static final String NO_USER_FOUND_BY_USER_NAME = "No User Found By User Name ";
     private Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private  LoggingAttemptService loggingAttemptService;
+
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user =userRepository.findUserByUserName(username);
         if(user==null){
-            LOGGER.error("User not found by spesified userName "+username);
-            throw new UsernameNotFoundException("User not found by spesified userName "+username);
+            LOGGER.error(USER_NOT_FOUND_BY_SPESIFIED_USER_NAME +username);
+            throw new UsernameNotFoundException(USER_NOT_FOUND_BY_SPESIFIED_USER_NAME +username);
         }else{
+            try {
+                validateLoggingAttempt(user);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
             user.setLastLoginDate(user.getLastLoginDate());
             user.setLastLoginDate(new Date());
             userRepository.save(user);
             UserPrincipal userPrincipal = new UserPrincipal(user);
-            LOGGER.info("Returning found user by userName "+username);
+            LOGGER.info(RETURNING_FOUND_USER_BY_USER_NAME +username);
             return userPrincipal;
         }
     }
+
 
     @Override
     public User register(String firstName, String lastName, String userName, String email) throws UserNameExistException,EmailExistException,UsernameNotFoundException {
@@ -63,11 +79,11 @@ public class UserServiceImpl implements UserService , UserDetailsService {
         user.setJoinDate(new Date());
         user.setPassword(encodedPassword);
         user.setActive(true);
-        user.setLocked(false);
+        user.setNonLocked(true);
         user.setRole(Role.ROLE_USER.name());
         user.setAuthorities(Role.ROLE_USER.getAuthorities());
         userRepository.save(user);
-
+        LOGGER.info(password +" trk");
         return user;
     }
 
@@ -87,22 +103,22 @@ public class UserServiceImpl implements UserService , UserDetailsService {
     private User validateUserNameAndEmail(String currentUserName,String newUserName , String newEmail) throws UserNameExistException,EmailExistException,UsernameNotFoundException{
         User userByUsername = findUserByUsername(newUserName);
         if(userByUsername!=null){
-            throw new UserNameExistException("Username Already Exist " + userByUsername);
+            throw new UserNameExistException(USERNAME_ALREADY_EXIST + userByUsername);
         }
         User userByEmail = findUserByEmail(newEmail);
         if(userByEmail!=null) {
-            throw new EmailExistException("Email Already Exist " + userByEmail);
+            throw new EmailExistException(EMAIL_ALREADY_EXIST + userByEmail);
         }
         if(StringUtils.hasText(currentUserName)){
             User currentUser = findUserByUsername(currentUserName);
-            if(currentUser==null) throw new UsernameNotFoundException("No User Found By User Name "+currentUserName);
+            if(currentUser==null) throw new UsernameNotFoundException(NO_USER_FOUND_BY_USER_NAME +currentUserName);
 
             if(newUserName!=null && !currentUser.getId().equals(userByUsername.getId())) {
-                throw new UserNameExistException("Username Already Exist " + userByUsername);
+                throw new UserNameExistException(USERNAME_ALREADY_EXIST + userByUsername);
             }
 
             if( !currentUser.getId().equals(userByUsername.getId())) {
-                throw new EmailExistException("Email Already Exist " + userByEmail);
+                throw new EmailExistException(EMAIL_ALREADY_EXIST + userByEmail);
             }
 
             return currentUser;
@@ -110,6 +126,18 @@ public class UserServiceImpl implements UserService , UserDetailsService {
             return  null;
         }
 
+    }
+
+    private void validateLoggingAttempt(User user) throws ExecutionException {
+        if(user.isNonLocked()){
+            if(loggingAttemptService.hasExceededMaxAttempts(user.getUserName())){
+                user.setNonLocked(false);
+            }else{
+                user.setNonLocked(true);
+            }
+        }else {
+            loggingAttemptService.evictUserFromLoggingAttemptCache(user.getUserName());
+        }
     }
     @Override
     public List<User> getUsers() {

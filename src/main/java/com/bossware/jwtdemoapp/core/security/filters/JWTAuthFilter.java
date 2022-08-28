@@ -1,6 +1,5 @@
 package com.bossware.jwtdemoapp.core.security.filters;
 
-import com.bossware.jwtdemoapp.core.constants.SecurityConstants;
 import com.bossware.jwtdemoapp.core.utilities.JWTProvider;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +17,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
+import static com.bossware.jwtdemoapp.core.constants.SecurityConstants.*;
+
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpStatus.OK;
+
 @Component
 public class JWTAuthFilter extends OncePerRequestFilter {
     private JWTProvider jwtProvider;
@@ -28,24 +32,24 @@ public class JWTAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if(request.getMethod().equals(SecurityConstants.OPTIONS_HTTP_METHOD)){
-            response.setStatus(HttpStatus.OK.value());
-        }else{
-            String autharizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-            if (!StringUtils.isAnyBlank(autharizationHeader)||!autharizationHeader.startsWith(SecurityConstants.TOKEN_PREFIX)){
-                filterChain.doFilter(request,response);
+        if (request.getMethod().equalsIgnoreCase(OPTIONS_HTTP_METHOD)) {
+            response.setStatus(OK.value());
+        } else {
+            String authorizationHeader = request.getHeader(AUTHORIZATION);
+            if (authorizationHeader == null || !authorizationHeader.startsWith(TOKEN_PREFIX)) {
+                filterChain.doFilter(request, response);
+                return;
             }
-
-            String token = autharizationHeader.substring(SecurityConstants.TOKEN_PREFIX.length());
-            String userName = jwtProvider.getSubject(token);
-            if(jwtProvider.isTokenValid(userName,token)&& SecurityContextHolder.getContext().getAuthentication()==null){
-                List<GrantedAuthority> authorityList = jwtProvider.getAuthorities(token);
-                Authentication authentication = jwtProvider.getAuthentication(userName,authorityList,request);
+            String token = authorizationHeader.substring(TOKEN_PREFIX.length());
+            String username = jwtProvider.getSubject(token);
+            if (jwtProvider.isTokenValid(username, token) && SecurityContextHolder.getContext().getAuthentication() == null) {
+                List<GrantedAuthority> authorities = jwtProvider.getAuthorities(token);
+                Authentication authentication = jwtProvider.getAuthentication(username, authorities, request);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-            }else{
+            } else {
                 SecurityContextHolder.clearContext();
             }
         }
-        filterChain.doFilter(request,response);
+        filterChain.doFilter(request, response);
     }
 }
